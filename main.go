@@ -278,7 +278,10 @@ func fetchLyrics(lyricsURL, accessToken string) ([]Line, error) {
 }
 
 func main() {
-	lmt := tollbooth.NewLimiter(2, nil)
+    log.SetFormatter(&log.JSONFormatter{})
+    log.SetOutput(os.Stdout)
+
+    lmt := tollbooth.NewLimiter(2, nil)
 
 	router := mux.NewRouter()
 	router.HandleFunc("/getLyrics", getLyrics)
