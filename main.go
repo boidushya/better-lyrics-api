@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"sync"
 	"time"
 
+    log "github.com/sirupsen/logrus"
 	"github.com/didip/tollbooth/v7"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -178,7 +178,7 @@ func getLyrics(w http.ResponseWriter, r *http.Request) {
 		query := url.QueryEscape(songName + " " + artistName)
 		cacheKey := fmt.Sprintf("track:%s", query)
 		if cachedTrackID, ok := getCache(cacheKey); ok {
-			log.InfoF("[Cache:Track] Found cached track id: %s", cachedTrackID)
+			log.Infof("[Cache:Track] Found cached track id: %s", cachedTrackID)
 			trackID = cachedTrackID
 		} else {
 			trackID, err = fetchTrackID(query, accessToken)
@@ -187,7 +187,7 @@ func getLyrics(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			if trackID != "" {
-				log.InfoF("[Cache:Track] Caching track id: %s", trackID)
+				log.Infof("[Cache:Track] Caching track id: %s", trackID)
 				setCache(cacheKey, trackID, time.Hour)
 			} else {
 				http.Error(w, "Track not found", http.StatusNotFound)
@@ -303,6 +303,6 @@ func main() {
 
 	handler := c.Handler(tollbooth.LimitHandler(lmt, loggedRouter))
 
-	log.InfoF("Server listening on port %s", port)
+	log.Infof("Server listening on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, handler))
 }
