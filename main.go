@@ -283,6 +283,8 @@ func main() {
 
     lmt := tollbooth.NewLimiter(2, nil)
 
+    lmt.SetIPLookups([]string{"RemoteAddr", "X-Forwarded-For", "X-Real-IP"})
+
 	router := mux.NewRouter()
 	router.HandleFunc("/getLyrics", getLyrics)
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
