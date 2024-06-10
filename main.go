@@ -65,9 +65,11 @@ type CacheEntry struct {
 }
 
 func init() {
+	// Try loading .env file if it exists if not, use the environment variables
+
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Println("Error loading .env file, using environment variables")
 	}
 
 	httpClient = &http.Client{
