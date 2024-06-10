@@ -69,7 +69,7 @@ func init() {
 
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("Error loading .env file, using environment variables")
+		log.Info("Error loading .env file, using environment variables")
 	}
 
 	httpClient = &http.Client{
@@ -135,7 +135,7 @@ func setCache(key, value string, duration time.Duration) {
 
 func getValidAccessToken() (string, error) {
 	if token, ok := getCache(TokenKey); ok {
-		log.Println("[Cache:Token] Using cached token")
+		log.Info("[Cache:Token] Using cached token")
 		return token, nil
 	}
 
@@ -178,7 +178,7 @@ func getLyrics(w http.ResponseWriter, r *http.Request) {
 		query := url.QueryEscape(songName + " " + artistName)
 		cacheKey := fmt.Sprintf("track:%s", query)
 		if cachedTrackID, ok := getCache(cacheKey); ok {
-			log.Printf("[Cache:Track] Found cached track id: %s", cachedTrackID)
+			log.InfoF("[Cache:Track] Found cached track id: %s", cachedTrackID)
 			trackID = cachedTrackID
 		} else {
 			trackID, err = fetchTrackID(query, accessToken)
@@ -187,7 +187,7 @@ func getLyrics(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			if trackID != "" {
-				log.Printf("[Cache:Track] Caching track id: %s", trackID)
+				log.InfoF("[Cache:Track] Caching track id: %s", trackID)
 				setCache(cacheKey, trackID, time.Hour)
 			} else {
 				http.Error(w, "Track not found", http.StatusNotFound)
@@ -199,7 +199,7 @@ func getLyrics(w http.ResponseWriter, r *http.Request) {
 	lyricsURL := LyricsURL + trackID + "?format=json&market=from_token"
 	cacheKey := fmt.Sprintf("lyrics:%s", trackID)
 	if cachedLyrics, ok := getCache(cacheKey); ok {
-		log.Println("[Cache:Lyrics] Found cached lyrics")
+		log.Info("[Cache:Lyrics] Found cached lyrics")
 		w.Header().Set("Content-Type", "application/json")
 		lyrics := []Line{}
 		json.Unmarshal([]byte(cachedLyrics), &lyrics)
@@ -223,7 +223,7 @@ func getLyrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println("[Cache:Lyrics] Caching lyrics")
+	log.Info("[Cache:Lyrics] Caching lyrics")
 	cacheValue, _ := json.Marshal(lyrics)
 	setCache(cacheKey, string(cacheValue), 24*time.Hour)
 
@@ -303,6 +303,6 @@ func main() {
 
 	handler := c.Handler(tollbooth.LimitHandler(lmt, loggedRouter))
 
-	log.Printf("Server listening on port %s", port)
+	log.InfoF("Server listening on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, handler))
 }
