@@ -10,12 +10,12 @@ import (
 	"sync"
 	"time"
 
-    log "github.com/sirupsen/logrus"
 	"github.com/didip/tollbooth/v7"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"github.com/rs/cors"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -66,8 +66,8 @@ type CacheEntry struct {
 
 func init() {
 
-    log.SetFormatter(&log.JSONFormatter{})
-    log.SetOutput(os.Stdout)
+	log.SetFormatter(&log.JSONFormatter{})
+	log.SetOutput(os.Stdout)
 
 	err := godotenv.Load()
 	if err != nil {
@@ -281,9 +281,9 @@ func fetchLyrics(lyricsURL, accessToken string) ([]Line, error) {
 
 func main() {
 
-    lmt := tollbooth.NewLimiter(2, nil)
+	lmt := tollbooth.NewLimiter(2, nil)
 
-    lmt.SetIPLookups([]string{"RemoteAddr", "X-Forwarded-For", "X-Real-IP"})
+	lmt.SetIPLookups([]string{"RemoteAddr", "X-Forwarded-For", "X-Real-IP"})
 
 	router := mux.NewRouter()
 	router.HandleFunc("/getLyrics", getLyrics)
