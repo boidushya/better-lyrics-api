@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"lyrics-api-go/middleware"
 	"net/http"
 	"net/url"
 	"os"
 	"sync"
 	"time"
 
-	"github.com/didip/tollbooth/v7"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
@@ -281,9 +281,9 @@ func fetchLyrics(lyricsURL, accessToken string) ([]Line, error) {
 
 func main() {
 
-	lmt := tollbooth.NewLimiter(2, nil)
-
-	lmt.SetIPLookups([]string{"RemoteAddr", "X-Forwarded-For", "X-Real-IP"})
+	//lmt := tollbooth.NewLimiter(2, nil)
+	//
+	//lmt.SetIPLookups([]string{"RemoteAddr", "X-Forwarded-For", "X-Real-IP"})
 
 	router := mux.NewRouter()
 	router.HandleFunc("/getLyrics", getLyrics)
@@ -293,8 +293,6 @@ func main() {
 			"help": "Use /getLyrics to get the lyrics of a song. Provide the song name and artist name as query parameters. Example: /getLyrics?s=Shape%20of%20You&a=Ed%20Sheeran",
 		})
 	})
-
-	loggedRouter := handlers.LoggingHandler(os.Stdout, router)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -306,8 +304,28 @@ func main() {
 		AllowCredentials: true,
 	})
 
-	handler := c.Handler(tollbooth.LimitHandler(lmt, loggedRouter))
+	limiter := middleware.NewIPRateLimiter(2, 10)
+
+	// logging middleware
+	loggedRouter := handlers.LoggingHandler(os.Stdout, router)
+	// chain cors middleware
+	corsHandler := c.Handler(loggedRouter)
+
+	//chain rate limiter
+	handler := limitMiddleware(corsHandler, limiter)
 
 	log.Infof("Server listening on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, handler))
+}
+
+func limitMiddleware(next http.Handler, limiter *middleware.IPRateLimiter) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		limiter := limiter.GetLimiter(r.RemoteAddr)
+		if !limiter.Allow() {
+			http.Error(w, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
