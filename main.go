@@ -65,11 +65,13 @@ type CacheEntry struct {
 }
 
 func init() {
-	// Try loading .env file if it exists if not, use the environment variables
+
+    log.SetFormatter(&log.JSONFormatter{})
+    log.SetOutput(os.Stdout)
 
 	err := godotenv.Load()
 	if err != nil {
-		log.Info("Error loading .env file, using environment variables")
+		log.Warn("Error loading .env file, using environment variables")
 	}
 
 	httpClient = &http.Client{
@@ -187,7 +189,7 @@ func getLyrics(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			if trackID != "" {
-				log.Infof("[Cache:Track] Caching track id: %s", trackID)
+				log.Warnf("[Cache:Track] Caching track id: %s", trackID)
 				setCache(cacheKey, trackID, time.Hour)
 			} else {
 				http.Error(w, "Track not found", http.StatusNotFound)
@@ -223,7 +225,7 @@ func getLyrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Info("[Cache:Lyrics] Caching lyrics")
+	log.Warn("[Cache:Lyrics] Caching lyrics")
 	cacheValue, _ := json.Marshal(lyrics)
 	setCache(cacheKey, string(cacheValue), 24*time.Hour)
 
@@ -278,8 +280,6 @@ func fetchLyrics(lyricsURL, accessToken string) ([]Line, error) {
 }
 
 func main() {
-    log.SetFormatter(&log.JSONFormatter{})
-    log.SetOutput(os.Stdout)
 
     lmt := tollbooth.NewLimiter(2, nil)
 
