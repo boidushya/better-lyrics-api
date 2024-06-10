@@ -3,7 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"golang.org/x/time/rate"
 	"io/ioutil"
+	"lyrics-api-go/config"
 	"lyrics-api-go/middleware"
 	"net/http"
 	"net/url"
@@ -293,6 +295,7 @@ func main() {
 			"help": "Use /getLyrics to get the lyrics of a song. Provide the song name and artist name as query parameters. Example: /getLyrics?s=Shape%20of%20You&a=Ed%20Sheeran",
 		})
 	})
+	conf := config.Get()
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -304,7 +307,7 @@ func main() {
 		AllowCredentials: true,
 	})
 
-	limiter := middleware.NewIPRateLimiter(2, 10)
+	limiter := middleware.NewIPRateLimiter(rate.Limit(conf.Configuration.RateLimitPerSecond), conf.Configuration.RateLimitBurstLimit)
 
 	// logging middleware
 	loggedRouter := handlers.LoggingHandler(os.Stdout, router)
