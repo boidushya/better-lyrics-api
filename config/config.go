@@ -25,6 +25,10 @@ type Config struct {
 		CookieStringFormat                 string `envconfig:"COOKIE_STRING_FORMAT" default:""`
 		CookieValue                        string `envconfig:"COOKIE_VALUE" default:""`
 	}
+
+	FeatureFlags struct {
+		CacheCompression bool `envconfig:"FF_CACHE_COMPRESSION" default:"true"`
+	}
 }
 
 // load loads the configuration from the environment.
