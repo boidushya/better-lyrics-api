@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"lyrics-api-go/config"
 	"lyrics-api-go/middleware"
+	"lyrics-api-go/utils"
 	"net/http"
 	"net/url"
 	"os"
@@ -178,14 +179,39 @@ func getCache(key string) (string, bool) {
 		cache.Delete(key)
 		return "", false
 	}
-	return cacheEntry.Value, true
+	if conf.FeatureFlags.CacheCompression {
+		// Decompress the value before returning
+		decompressedValue, err := utils.DecompressString(cacheEntry.Value)
+		if err != nil {
+			log.Errorf("Error decompressing cache value: %v", err)
+			return "", false
+		}
+		return decompressedValue, true
+	} else {
+		return cacheEntry.Value, true
+	}
 }
 
 func setCache(key, value string, duration time.Duration) {
-	cacheEntry := CacheEntry{
-		Value:      value,
-		Expiration: time.Now().Add(duration).UnixNano(),
+	var cacheEntry CacheEntry
+
+	if conf.FeatureFlags.CacheCompression {
+		compressedValue, err := utils.CompressString(value)
+		if err != nil {
+			log.Errorf("Error compressing cache value: %v", err)
+			return
+		}
+		cacheEntry = CacheEntry{
+			Value:      compressedValue,
+			Expiration: time.Now().Add(duration).UnixNano(),
+		}
+	} else {
+		cacheEntry = CacheEntry{
+			Value:      value,
+			Expiration: time.Now().Add(duration).UnixNano(),
+		}
 	}
+
 	cache.Store(key, cacheEntry)
 }
 
