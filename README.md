@@ -1,5 +1,10 @@
 # Better Lyrics API
 
+![GitHub top language](https://img.shields.io/github/languages/top/boidushya/better-lyrics-api)
+![GitHub License](https://img.shields.io/github/license/boidushya/better-lyrics-api)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/boidushya/better-lyrics-api/go.yml)
+![Railway](https://img.shields.io/badge/deployement-railway-javascript?logo=railway&logoColor=fff&color=851AE6)
+
 This repository contains the source code for the official Better Lyrics API - primarily serving as the backend for [Better Lyrics](https://better-lyrics.boidu.dev).
 
 > [!NOTE]
