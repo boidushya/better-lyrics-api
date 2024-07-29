@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -46,6 +47,7 @@ type TokenData struct {
 
 type Line struct {
 	StartTimeMs string   `json:"startTimeMs"`
+	DurationMs  string   `json:"durationMs"`
 	Words       string   `json:"words"`
 	Syllables   []string `json:"syllables"`
 	EndTimeMs   string   `json:"endTimeMs"`
@@ -356,7 +358,22 @@ func fetchLyrics(lyricsURL, accessToken string) ([]Line, error) {
 		return nil, err
 	}
 
-	return lyricsResp.Lyrics.Lines, nil
+	lines := lyricsResp.Lyrics.Lines
+	for i := 0; i < len(lines); i++ {
+		startTime, _ := strconv.ParseInt(lines[i].StartTimeMs, 10, 64)
+		var endTime int64
+
+		if i == len(lines)-1 {
+			endTime, _ = strconv.ParseInt(lines[i].StartTimeMs, 10, 64)
+		} else {
+			endTime, _ = strconv.ParseInt(lines[i+1].StartTimeMs, 10, 64)
+		}
+
+		duration := endTime - startTime
+		lines[i].DurationMs = strconv.FormatInt(duration, 10)
+	}
+
+	return lines, nil
 }
 
 func getCacheDump(w http.ResponseWriter, r *http.Request) {
