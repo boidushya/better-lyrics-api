@@ -55,8 +55,10 @@ type Line struct {
 
 type LyricsResponse struct {
 	Lyrics struct {
-		SyncType string `json:"syncType"`
-		Lines    []Line `json:"lines"`
+		SyncType      string `json:"syncType"`
+		Lines         []Line `json:"lines"`
+		IsRtlLanguage bool   `json:"isRtlLanguage"`
+		Language      string `json:"language"`
 	} `json:"lyrics"`
 }
 
@@ -134,6 +136,22 @@ func main() {
 	log.Infof("Server listening on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, handler))
 
+}
+
+func isRTLLanguage(langCode string) bool {
+	rtlLanguages := map[string]bool{
+		"ar": true, // Arabic
+		"fa": true, // Persian (Farsi)
+		"he": true, // Hebrew
+		"ur": true, // Urdu
+		"ps": true, // Pashto
+		"sd": true, // Sindhi
+		"ug": true, // Uyghur
+		"yi": true, // Yiddish
+		"ku": true, // Kurdish (some dialects)
+		"dv": true, // Divehi (Maldivian)
+	}
+	return rtlLanguages[langCode]
 }
 
 func setCommonHeaders(req *http.Request) {
@@ -285,17 +303,19 @@ func getLyrics(w http.ResponseWriter, r *http.Request) {
 	if cachedLyrics, ok := getCache(cacheKey); ok {
 		log.Info("[Cache:Lyrics] Found cached lyrics")
 		w.Header().Set("Content-Type", "application/json")
-		lyrics := []Line{}
-		json.Unmarshal([]byte(cachedLyrics), &lyrics)
+		var cachedData map[string]interface{}
+		json.Unmarshal([]byte(cachedLyrics), &cachedData)
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"error":   nil,
-			"trackId": trackID,
-			"lyrics":  lyrics,
+			"error":         nil,
+			"trackId":       trackID,
+			"lyrics":        cachedData["lyrics"],
+			"isRtlLanguage": cachedData["isRtlLanguage"],
+			"language":      cachedData["language"],
 		})
 		return
 	}
 
-	lyrics, err := fetchLyrics(lyricsURL, accessToken)
+	lyrics, isRtlLanguage, language, err := fetchLyrics(lyricsURL, accessToken)
 	if err != nil {
 		fmt.Println("Error fetching lyrics: ", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -308,15 +328,22 @@ func getLyrics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Warn("[Cache:Lyrics] Caching lyrics")
-	cacheValue, _ := json.Marshal(lyrics)
+	cacheValue, _ := json.Marshal(map[string]interface{}{
+		"lyrics":        lyrics,
+		"isRtlLanguage": isRtlLanguage,
+		"language":      language,
+	})
 	setCache(cacheKey, string(cacheValue), time.Duration(conf.Configuration.LyricsCacheTTLInSeconds)*time.Second)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"error":   nil,
-		"trackId": trackID,
-		"lyrics":  lyrics,
+		"error":         nil,
+		"trackId":       trackID,
+		"lyrics":        lyrics,
+		"isRtlLanguage": isRtlLanguage,
+		"language":      language,
 	})
+
 }
 
 func fetchTrackID(query, accessToken string) (string, error) {
@@ -340,22 +367,22 @@ func fetchTrackID(query, accessToken string) (string, error) {
 	return "", nil
 }
 
-func fetchLyrics(lyricsURL, accessToken string) ([]Line, error) {
+func fetchLyrics(lyricsURL, accessToken string) ([]Line, bool, string, error) {
 	headers := map[string]string{
 		"Authorization": "Bearer " + accessToken,
 	}
 	body, err := makeHTTPRequest("GET", lyricsURL, headers)
 	if err != nil {
-		return nil, err
+		return nil, false, "", err
 	}
 
 	if body == nil {
-		return nil, nil
+		return nil, false, "", nil
 	}
 
 	var lyricsResp LyricsResponse
 	if err := json.Unmarshal(body, &lyricsResp); err != nil {
-		return nil, err
+		return nil, false, "", err
 	}
 
 	lines := lyricsResp.Lyrics.Lines
@@ -372,8 +399,10 @@ func fetchLyrics(lyricsURL, accessToken string) ([]Line, error) {
 		duration := endTime - startTime
 		lines[i].DurationMs = strconv.FormatInt(duration, 10)
 	}
+	language := lyricsResp.Lyrics.Language
+	isRTL := isRTLLanguage(language)
 
-	return lines, nil
+	return lines, isRTL, language, nil
 }
 
 func getCacheDump(w http.ResponseWriter, r *http.Request) {
