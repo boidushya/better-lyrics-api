@@ -24,6 +24,10 @@ type Config struct {
 		UserAgent                          string `envconfig:"USER_AGENT" default:""`
 		CookieStringFormat                 string `envconfig:"COOKIE_STRING_FORMAT" default:""`
 		CookieValue                        string `envconfig:"COOKIE_VALUE" default:""`
+		ClientID                           string `envconfig:"CLIENT_ID" default:""`
+		ClientSecret                       string `envconfig:"CLIENT_SECRET" default:""`
+		OauthTokenUrl                      string `envconfig:"OAUTH_TOKEN_URL" default:""`
+		OauthTokenKey                      string `envconfig:"OAUTH_TOKEN_KEY" default:""`
 	}
 
 	FeatureFlags struct {
