@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -11,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -33,6 +35,10 @@ var (
 	UserAgent          = conf.Configuration.UserAgent
 	CookieStringFormat = conf.Configuration.CookieStringFormat
 	CookieValue        = conf.Configuration.CookieValue
+	ClientID           = conf.Configuration.ClientID
+	ClientSecret       = conf.Configuration.ClientSecret
+	OauthTokenUrl      = conf.Configuration.OauthTokenUrl
+	OauthTokenKey      = conf.Configuration.OauthTokenKey
 )
 
 var (
@@ -81,6 +87,12 @@ type CacheDumpResponse struct {
 	NumberOfKeys int
 	SizeInKB     int
 	Cache        CacheDump
+}
+
+type TokenResponse struct {
+	AccessToken string `json:"access_token"`
+	TokenType   string `json:"token_type"`
+	ExpiresIn   int    `json:"expires_in"`
 }
 
 func init() {
@@ -235,6 +247,50 @@ func setCache(key, value string, duration time.Duration) {
 	cache.Store(key, cacheEntry)
 }
 
+func getOauthAccessToken(clientID, clientSecret string) (string, error) {
+
+	if token, ok := getCache(OauthTokenKey); ok {
+		log.Info("[Cache:OAuthToken] Using cached token")
+		return token, nil
+	}
+
+	auth := base64.StdEncoding.EncodeToString([]byte(clientID + ":" + clientSecret))
+
+	data := url.Values{}
+	data.Set("grant_type", "client_credentials")
+
+	req, err := http.NewRequest("POST", OauthTokenUrl,
+		strings.NewReader(data.Encode()))
+	if err != nil {
+		return "", fmt.Errorf("error creating token request: %v", err)
+	}
+
+	req.Header.Set("Authorization", "Basic "+auth)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("error making token request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("error reading token response: %v", err)
+	}
+
+	var tokenResp TokenResponse
+	if err := json.Unmarshal(body, &tokenResp); err != nil {
+		return "", fmt.Errorf("error parsing token response: %v", err)
+	}
+
+	log.Warn("[Cache:OAuthToken] Caching token")
+	setCache(OauthTokenKey, tokenResp.AccessToken, time.Duration(tokenResp.ExpiresIn)*time.Second)
+
+	return tokenResp.AccessToken, nil
+}
+
 func getValidAccessToken() (string, error) {
 	if token, ok := getCache(TokenKey); ok {
 		log.Info("[Cache:Token] Using cached token")
@@ -283,7 +339,7 @@ func getLyrics(w http.ResponseWriter, r *http.Request) {
 			log.Infof("[Cache:Track] Found cached track id: %s", cachedTrackID)
 			trackID = cachedTrackID
 		} else {
-			trackID, err = fetchTrackID(query, accessToken)
+			trackID, err = fetchTrackID(query, ClientID, ClientSecret)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -346,18 +402,27 @@ func getLyrics(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func fetchTrackID(query, accessToken string) (string, error) {
+func fetchTrackID(query, clientID, clientSecret string) (string, error) {
+	accessToken, err := getOauthAccessToken(clientID, clientSecret)
+	if err != nil {
+		return "", fmt.Errorf("error getting access token: %v", err)
+	}
+
+	encodedQuery := url.QueryEscape(query)
+	searchURL := fmt.Sprintf("%s%s", conf.Configuration.TrackUrl, encodedQuery)
+
 	headers := map[string]string{
 		"Authorization": "Bearer " + accessToken,
 	}
-	body, err := makeHTTPRequest("GET", TrackURL+query, headers)
+
+	body, err := makeHTTPRequest("GET", searchURL, headers)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error making search request: %v", err)
 	}
 
 	var trackResp TrackResponse
 	if err := json.Unmarshal(body, &trackResp); err != nil {
-		return "", err
+		return "", fmt.Errorf("error parsing search response: %v", err)
 	}
 
 	if len(trackResp.Tracks.Items) > 0 {
