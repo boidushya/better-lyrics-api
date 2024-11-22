@@ -53,5 +53,22 @@ jobs:
       - name: Build
         run: go build -v ./...
 
+      - name: Start server
+        run: go run main.go &
+        env:
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          LYRICS_URL: ${{ secrets.LYRICS_URL }}
+          TRACK_URL: ${{ secrets.TRACK_URL }}
+          TOKEN_URL: ${{ secrets.TOKEN_URL }}
+          TOKEN_KEY: ${{ secrets.TOKEN_KEY }}
+          APP_PLATFORM: ${{ secrets.APP_PLATFORM }}
+          USER_AGENT: ${{ secrets.USER_AGENT }}
+          COOKIE_STRING_FORMAT: ${{ secrets.COOKIE_STRING_FORMAT }}
+          COOKIE_VALUE: ${{ secrets.COOKIE_VALUE }}
+          OAUTH_TOKEN_URL: ${{ secrets.OAUTH_TOKEN_URL }}
+          OAUTH_TOKEN_KEY: ${{ secrets.OAUTH_TOKEN_KEY }}
+          CACHE_ACCESS_TOKEN: ${{ secrets.CACHE_ACCESS_TOKEN }}
+
       - name: Test
         run: go test -v ./...

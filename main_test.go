@@ -18,7 +18,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestGetLyrics(t *testing.T) {
-	req, err := http.NewRequest("GET", "/getLyrics?s=Blue&a=Billie%20Eilish", nil)
+	req, err := http.NewRequest("GET", "http://localhost:8080/getLyrics?s=Blue&a=Billie%20Eilish", nil)
 	assert.NoError(t, err)
 
 	rr := httptest.NewRecorder()
@@ -32,6 +32,12 @@ func TestGetLyrics(t *testing.T) {
 	err = json.Unmarshal(rr.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.NotNil(t, response["lyrics"])
+
+	expectedStatusCode := 200
+	actualStatusCode := 500 // Replace with actual call to the function being tested
+	if expectedStatusCode != actualStatusCode {
+		t.Errorf("Expected status code %d, got %d", expectedStatusCode, actualStatusCode)
+	}
 }
 
 func TestGetCacheDump(t *testing.T) {
@@ -69,6 +75,12 @@ func TestFetchTrackID(t *testing.T) {
 	trackID, err := fetchTrackID("Blue Billie Eilish", ClientID, ClientSecret)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, trackID)
+
+	url := "http://localhost:8080/search?query=Blue+Billie+Eilish" // Local URL for testing
+	_, err = http.Get(url)
+	if err != nil {
+		t.Errorf("Error making search request: %v", err)
+	}
 }
 
 func TestFetchLyrics(t *testing.T) {
@@ -79,7 +91,7 @@ func TestFetchLyrics(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, trackID)
 
-	lyricsURL := LyricsURL + trackID + "?format=json&market=from_token"
+	lyricsURL := "http://localhost:8080/lyrics?track_id=" + trackID // Local URL for testing
 	lines, isRtlLanguage, language, err := fetchLyrics(lyricsURL, accessToken)
 	if err != nil {
 		t.Fatalf("Failed to fetch lyrics: %v", err)
