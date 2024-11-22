@@ -408,8 +408,7 @@ func fetchTrackID(query, clientID, clientSecret string) (string, error) {
 		return "", fmt.Errorf("error getting access token: %v", err)
 	}
 
-	encodedQuery := url.QueryEscape(query)
-	searchURL := fmt.Sprintf("%s%s", conf.Configuration.TrackUrl, encodedQuery)
+	searchURL := TrackURL + query
 
 	headers := map[string]string{
 		"Authorization": "Bearer " + accessToken,
