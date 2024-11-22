@@ -12,20 +12,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      CLIENT_ID: ${{ secrets.CLIENT_ID }}
-      CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
-      LYRICS_URL: ${{ secrets.LYRICS_URL }}
-      TRACK_URL: ${{ secrets.TRACK_URL }}
-      TOKEN_URL: ${{ secrets.TOKEN_URL }}
-      TOKEN_KEY: ${{ secrets.TOKEN_KEY }}
-      APP_PLATFORM: ${{ secrets.APP_PLATFORM }}
-      USER_AGENT: ${{ secrets.USER_AGENT }}
-      COOKIE_STRING_FORMAT: ${{ secrets.COOKIE_STRING_FORMAT }}
-      COOKIE_VALUE: ${{ secrets.COOKIE_VALUE }}
-      OAUTH_TOKEN_URL: ${{ secrets.OAUTH_TOKEN_URL }}
-      OAUTH_TOKEN_KEY: ${{ secrets.OAUTH_TOKEN_KEY }}
-      CACHE_ACCESS_TOKEN: ${{ secrets.CACHE_ACCESS_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -34,41 +20,8 @@ jobs:
         with:
           go-version: "1.22.4"
 
-      - name: Create .env file
-        run: |
-          echo CLIENT_ID=${{ secrets.CLIENT_ID }} >> .env
-          echo CLIENT_SECRET=${{ secrets.CLIENT_SECRET }} >> .env
-          echo LYRICS_URL=${{ secrets.LYRICS_URL }} >> .env
-          echo TRACK_URL=${{ secrets.TRACK_URL }} >> .env
-          echo TOKEN_URL=${{ secrets.TOKEN_URL }} >> .env
-          echo TOKEN_KEY=${{ secrets.TOKEN_KEY }} >> .env
-          echo APP_PLATFORM=${{ secrets.APP_PLATFORM }} >> .env
-          echo USER_AGENT=${{ secrets.USER_AGENT }} >> .env
-          echo COOKIE_STRING_FORMAT=${{ secrets.COOKIE_STRING_FORMAT }} >> .env
-          echo COOKIE_VALUE=${{ secrets.COOKIE_VALUE }} >> .env
-          echo OAUTH_TOKEN_URL=${{ secrets.OAUTH_TOKEN_URL }} >> .env
-          echo OAUTH_TOKEN_KEY=${{ secrets.OAUTH_TOKEN_KEY }} >> .env
-          echo CACHE_ACCESS_TOKEN=${{ secrets.CACHE_ACCESS_TOKEN }} >> .env
-
       - name: Build
         run: go build -v ./...
-
-      - name: Start server
-        run: go run main.go &
-        env:
-          CLIENT_ID: ${{ secrets.CLIENT_ID }}
-          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
-          LYRICS_URL: ${{ secrets.LYRICS_URL }}
-          TRACK_URL: ${{ secrets.TRACK_URL }}
-          TOKEN_URL: ${{ secrets.TOKEN_URL }}
-          TOKEN_KEY: ${{ secrets.TOKEN_KEY }}
-          APP_PLATFORM: ${{ secrets.APP_PLATFORM }}
-          USER_AGENT: ${{ secrets.USER_AGENT }}
-          COOKIE_STRING_FORMAT: ${{ secrets.COOKIE_STRING_FORMAT }}
-          COOKIE_VALUE: ${{ secrets.COOKIE_VALUE }}
-          OAUTH_TOKEN_URL: ${{ secrets.OAUTH_TOKEN_URL }}
-          OAUTH_TOKEN_KEY: ${{ secrets.OAUTH_TOKEN_KEY }}
-          CACHE_ACCESS_TOKEN: ${{ secrets.CACHE_ACCESS_TOKEN }}
 
       - name: Test
         run: go test -v ./...
