@@ -120,7 +120,7 @@ func main() {
 	}
 
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"https://music.youtube.com", "http://localhost:*", "https://lyrics-api-docs.boidu.dev", "https://braccato.boidu.dev", "https://composer.boidu.dev"},
+		AllowedOrigins:   []string{"https://music.youtube.com", "http://localhost:*", "https://lyrics-api-docs.boidu.dev", "https://braccato.boidu.dev", "https://composer.boidu.dev", "https://composer.betterlyrics.org"},
 		AllowCredentials: true,
 	})
 
