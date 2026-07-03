@@ -786,6 +786,13 @@ func cacheDump(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("Content-Disposition", "attachment; filename=cache.db")
 
+	// The server sets a 60s WriteTimeout to bound normal request lifetimes, but
+	// this streams the whole multi-GB BoltDB and can legitimately run longer.
+	// Clear the write deadline for this response so a slow consumer isn't cut off.
+	if err := http.NewResponseController(w).SetWriteDeadline(time.Time{}); err != nil {
+		log.Warnf("%s Could not clear write deadline for cache dump: %v", logcolors.LogCache, err)
+	}
+
 	n, err := persistentCache.WriteTo(w)
 	if err != nil {
 		log.Errorf("%s Failed to stream cache dump: %v", logcolors.LogCache, err)

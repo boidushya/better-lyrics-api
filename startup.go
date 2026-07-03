@@ -9,9 +9,28 @@ import (
 	"lyrics-api-go/stats"
 	"net/http"
 	"os"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
+
+// newHTTPServer builds the API's HTTP server with explicit timeouts.
+//
+// http.ListenAndServe uses a zero-value http.Server with no timeouts, so idle
+// or stuck keep-alive connections (dead peers, slowloris, clients that stop
+// reading) are never reaped. On a long-lived, public-facing process they leak
+// file descriptors until accept() fails with "too many open files" and the
+// server stops answering. These timeouts bound every connection's lifetime.
+func newHTTPServer(addr string, handler http.Handler) *http.Server {
+	return &http.Server{
+		Addr:              addr,
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second, // slowloris guard: header must arrive quickly
+		ReadTimeout:       30 * time.Second, // whole request (headers + body)
+		WriteTimeout:      60 * time.Second, // response write ceiling (lyrics JSON, not streaming)
+		IdleTimeout:       90 * time.Second, // reap idle keep-alive connections
+	}
+}
 
 func getEnvOrDefault(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
