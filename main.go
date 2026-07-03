@@ -8,7 +8,6 @@ import (
 	"lyrics-api-go/services/notifier"
 	"lyrics-api-go/services/providers/ttml"
 	"lyrics-api-go/stats"
-	"net/http"
 	"os"
 	"sync"
 	"time"
@@ -111,6 +110,9 @@ func main() {
 	// Start memory monitor (logs RSS, alerts at threshold)
 	startMemoryMonitor(cachePath)
 
+	// Start file-descriptor monitor (logs open fds, alerts before the limit is hit)
+	startFDMonitor()
+
 	router := mux.NewRouter()
 	setupRoutes(router)
 
@@ -181,5 +183,6 @@ func main() {
 	// Publish server started event
 	notifier.PublishServerStarted(port, len(activeAccounts), outOfServiceNames)
 
-	log.Fatal(http.ListenAndServe(":"+port, handler))
+	srv := newHTTPServer(":"+port, handler)
+	log.Fatal(srv.ListenAndServe())
 }

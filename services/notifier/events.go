@@ -17,6 +17,7 @@ const (
 	EventMUTHealthCheckFailed  EventType = "mut_health_check_failed"
 
 	EventMemoryThresholdExceeded EventType = "memory_threshold_exceeded"
+	EventFDThresholdExceeded     EventType = "fd_threshold_exceeded"
 
 	// Warning events
 	EventHighFailureRate        EventType = "high_failure_rate"
@@ -231,6 +232,16 @@ func PublishMemoryThresholdExceeded(rssMB uint64, details map[string]interface{}
 	event := NewEvent(EventMemoryThresholdExceeded, SeverityCritical,
 		"Memory usage exceeded threshold").
 		WithData("rss_mb", rssMB).
+		WithData("details", details)
+	GetEventBus().Publish(event)
+}
+
+// PublishFDThresholdExceeded publishes when open file descriptors approach the process limit
+func PublishFDThresholdExceeded(openFDs int, limitFDs uint64, details map[string]interface{}) {
+	event := NewEvent(EventFDThresholdExceeded, SeverityCritical,
+		"Open file descriptors approaching the process limit").
+		WithData("open_fds", openFDs).
+		WithData("limit_fds", limitFDs).
 		WithData("details", details)
 	GetEventBus().Publish(event)
 }

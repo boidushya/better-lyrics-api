@@ -145,6 +145,18 @@ func (h *AlertHandler) formatAlert(event *Event) (subject, message string) {
 		}
 		message += "\nThe process may be OOM-killed soon. Check Railway metrics."
 
+	case EventFDThresholdExceeded:
+		openFDs := event.Data["open_fds"].(int)
+		limitFDs := event.Data["limit_fds"].(uint64)
+		subject = "File Descriptor Threshold Exceeded"
+		message = fmt.Sprintf("Open file descriptors have reached %d of %d.\n\n", openFDs, limitFDs)
+		if details, ok := event.Data["details"].(map[string]interface{}); ok {
+			for k, v := range details {
+				message += fmt.Sprintf("  • %s: %v\n", k, v)
+			}
+		}
+		message += "\nA connection or fd leak takes the API fully down when it hits the limit. Investigate now."
+
 	case EventServerStartupFailed:
 		component := event.Data["component"].(string)
 		errMsg := event.Data["error"].(string)
